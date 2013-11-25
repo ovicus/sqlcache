@@ -12,4 +12,4 @@ suitable for distributed scenarios.
 The SqlCache implementation requires a table that should be created through the provided SQL script.
 
 To use this library add a reference through Nuget:
-https://www.nuget.org/packages/Ovicus.Caching/
+https://www.nuget.org/packages/Ovicus.Caching
