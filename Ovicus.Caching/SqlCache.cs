@@ -324,7 +324,7 @@ namespace Ovicus.Caching
 
         public override string Name
         {
-            get { return this.GetType().FullName; }
+            get { return name; }
         }
 
         public override object Remove(string key, string regionName = null)
@@ -377,6 +377,26 @@ namespace Ovicus.Caching
             set
             {
                 Set(key, value, DateTime.Now.Add(OneDay));
+            }
+        }
+
+        /// <summary>
+        /// Remove expired entries from the cache table
+        /// </summary>
+        public void Flush()
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                SqlCommand cmdDel = new SqlCommand();
+                cmdDel.Connection = con;
+
+                // TODO: Remove items with sliding expiration time
+                
+                const string cmdText = "DELETE FROM {0} WHERE (AbsoluteExpirationTime <= GETDATE())";
+                cmdDel.CommandText = string.Format(cmdText, tableName);
+
+                con.Open();
+                cmdDel.ExecuteNonQuery();
             }
         }
     }
