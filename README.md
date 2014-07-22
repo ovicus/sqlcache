@@ -16,5 +16,7 @@ What's new in version 1.1?
 1. Custom cache table name supported.
 2. Add Flush method to remove expired entries.
 
+Whilst the Flush method is provided, a better approach to remove expired entries is using a SQL Job.
+
 To use this library add a reference through Nuget:
 https://www.nuget.org/packages/Ovicus.Caching
