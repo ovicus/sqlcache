@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ovicus.Caching", "Ovicus.Caching\Ovicus.Caching.csproj", "{1FE5F4D8-B5D2-40FE-A88A-B51C2B52D215}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ovicus.Caching.Test", "Ovicus.Caching.Test\Ovicus.Caching.Test.csproj", "{FE988750-15E4-499F-921F-31E95824E27B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{1FE5F4D8-B5D2-40FE-A88A-B51C2B52D215}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FE5F4D8-B5D2-40FE-A88A-B51C2B52D215}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FE5F4D8-B5D2-40FE-A88A-B51C2B52D215}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE988750-15E4-499F-921F-31E95824E27B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE988750-15E4-499F-921F-31E95824E27B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE988750-15E4-499F-921F-31E95824E27B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE988750-15E4-499F-921F-31E95824E27B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
