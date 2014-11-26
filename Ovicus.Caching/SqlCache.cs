@@ -84,6 +84,52 @@ namespace Ovicus.Caching
             return obj;
         }
 
+        private void InsertOrUpdateEntry(string key, object value, CacheItemPolicy policy)
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                // Add object to cache
+                SqlCommand cmdIns = new SqlCommand();
+                cmdIns.Connection = con;
+
+                const string cmdText = @"MERGE [{0}] as cache
+                                            USING (VALUES (@Key)) as src ([Key])
+                                            ON    (cache.[Key] = src.[Key])
+
+                                            WHEN MATCHED THEN
+                                                UPDATE SET 
+                                                    [Value] = @Value, 
+                                                    Created = @Created, 
+                                                    LastAccess = @LastAccess, 
+                                                    SlidingExpirationTimeInMinutes = @SlidingExpirationTimeInMinutes, 
+                                                    AbsoluteExpirationTime = @AbsoluteExpirationTime, 
+                                                    ObjectType = @ObjectType 
+      
+                                            WHEN NOT MATCHED THEN
+                                                INSERT ([Key], [Value], Created, LastAccess, SlidingExpirationTimeInMinutes, AbsoluteExpirationTime, ObjectType)
+                                                VALUES (@Key, @Value, @Created, @LastAccess, @SlidingExpirationTimeInMinutes, @AbsoluteExpirationTime, @ObjectType) ;";
+                
+                
+                cmdIns.CommandText = string.Format(cmdText, tableName);
+
+                cmdIns.Parameters.AddWithValue("@Key", key);
+                cmdIns.Parameters.AddWithValue("@Created", DateTime.Now);
+                cmdIns.Parameters.AddWithValue("@LastAccess", DateTime.Now);
+                cmdIns.Parameters.AddWithValue("@ObjectType", value.GetType().FullName);
+                cmdIns.Parameters.AddWithValue("@AbsoluteExpirationTime", DBNull.Value);
+                cmdIns.Parameters.AddWithValue("@SlidingExpirationTimeInMinutes", DBNull.Value);
+
+                SetExpirationValues(cmdIns, policy);
+
+                // Serialize value
+                byte[] serializedObj = Serialize(value);
+                cmdIns.Parameters.AddWithValue("@Value", serializedObj);
+
+                con.Open();
+                cmdIns.ExecuteNonQuery();
+            }
+        }
+
         private void InsertEntry(string key, object value, CacheItemPolicy policy)
         {
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -352,8 +398,13 @@ namespace Ovicus.Caching
 
         public override void Set(string key, object value, CacheItemPolicy policy, string regionName = null)
         {
-            if (Contains(key, regionName)) UpdateEntry(key, value, policy);
-            else InsertEntry(key, value, policy);
+            #region No Thread-Safe Code
+            //if (Contains(key, regionName)) UpdateEntry(key, value, policy);
+            //else InsertEntry(key, value, policy); 
+            #endregion
+
+            // Thread-Safe (requires SQL Server 2008 or higher as uses a MERGE command)
+            InsertOrUpdateEntry(key, value, policy);
         }
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
