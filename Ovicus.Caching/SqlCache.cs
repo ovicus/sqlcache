@@ -39,6 +39,7 @@ namespace Ovicus.Caching
     {
         private string name;
         private string connectionString;
+        private string schemaName = "dbo"; // Default schema name
         private string tableName = "Cache"; // Default table name
         private static readonly TimeSpan OneDay = new TimeSpan(24, 0, 0); // 1 day
 
@@ -56,13 +57,17 @@ namespace Ovicus.Caching
             this.name = name;
         }
 
-        public SqlCache(string name, string connectionString, string tableName)
+        public SqlCache(string name, string connectionString, string schemaName, string tableName)
             : this(name, connectionString)
         {
             if (string.IsNullOrEmpty(tableName))
                 throw new ArgumentException("A valid name for the cache table should be provided", "tableName");
+                
+            if (string.IsNullOrEmpty(schemaName))
+                throw new ArgumentException("A valid schema for the cache table should be provided", "schemaName");                
             
             this.tableName = tableName;
+            this.schemaName = schemaName;            
         }
 
         private static byte[] Serialize(object value)
@@ -92,7 +97,7 @@ namespace Ovicus.Caching
                 SqlCommand cmdIns = new SqlCommand();
                 cmdIns.Connection = con;
 
-                const string cmdText = @"MERGE [{0}] as cache
+                const string cmdText = @"MERGE [{0}].{1} as cache
                                             USING (VALUES (@Key)) as src ([Key])
                                             ON    (cache.[Key] = src.[Key])
 
@@ -110,7 +115,7 @@ namespace Ovicus.Caching
                                                 VALUES (@Key, @Value, @Created, @LastAccess, @SlidingExpirationTimeInMinutes, @AbsoluteExpirationTime, @ObjectType) ;";
                 
                 
-                cmdIns.CommandText = string.Format(cmdText, tableName);
+                cmdIns.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 cmdIns.Parameters.AddWithValue("@Key", key);
                 cmdIns.Parameters.AddWithValue("@Created", DateTime.Now);
@@ -138,9 +143,9 @@ namespace Ovicus.Caching
                 SqlCommand cmdIns = new SqlCommand();
                 cmdIns.Connection = con;
                 
-                const string cmdText = "INSERT INTO {0} ([Key], [Value], Created, LastAccess, SlidingExpirationTimeInMinutes, AbsoluteExpirationTime, ObjectType) " +
+                const string cmdText = "INSERT INTO [{0}].{1} ([Key], [Value], Created, LastAccess, SlidingExpirationTimeInMinutes, AbsoluteExpirationTime, ObjectType) " +
                                        "VALUES (@Key, @Value, @Created, @LastAccess, @SlidingExpirationTimeInMinutes, @AbsoluteExpirationTime, @ObjectType)";
-                cmdIns.CommandText = string.Format(cmdText, tableName);
+                cmdIns.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 cmdIns.Parameters.AddWithValue("@Key", key);
                 cmdIns.Parameters.AddWithValue("@Created", DateTime.Now);
@@ -168,10 +173,10 @@ namespace Ovicus.Caching
                 SqlCommand cmdUpd = new SqlCommand();
                 cmdUpd.Connection = con;
                 
-                const string cmdText = "UPDATE {0} SET [Value]=@Value, Created=@Created, LastAccess=@LastAccess, " +
+                const string cmdText = "UPDATE [{0}].{1} SET [Value]=@Value, Created=@Created, LastAccess=@LastAccess, " +
                                        "SlidingExpirationTimeInMinutes=@SlidingExpirationTimeInMinutes, AbsoluteExpirationTime=@AbsoluteExpirationTime, " +
                                        "ObjectType=@ObjectType WHERE [Key] = @Key";
-                cmdUpd.CommandText = string.Format(cmdText, tableName);
+                cmdUpd.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 cmdUpd.Parameters.AddWithValue("@Key", key);
                 cmdUpd.Parameters.AddWithValue("@Created", DateTime.Now);
@@ -255,8 +260,8 @@ namespace Ovicus.Caching
                 SqlCommand cmdSel = new SqlCommand();
                 cmdSel.Connection = con;
                 
-                string cmdText = "SELECT [Value], Created, LastAccess, SlidingExpirationTimeInMinutes, AbsoluteExpirationTime FROM {0} WHERE [Key] = @Key";
-                cmdSel.CommandText = string.Format(cmdText, tableName);
+                string cmdText = "SELECT [Value], Created, LastAccess, SlidingExpirationTimeInMinutes, AbsoluteExpirationTime FROM [{0}].{1} WHERE [Key] = @Key";
+                cmdSel.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 cmdSel.Parameters.AddWithValue("@Key", key);
                 con.Open();
@@ -293,8 +298,8 @@ namespace Ovicus.Caching
                         SqlCommand cmdUpd = new SqlCommand();
                         cmdUpd.Connection = con;
 
-                        cmdText = "UPDATE {0} SET LastAccess=@LastAccess WHERE [Key] = @Key";
-                        cmdUpd.CommandText = string.Format(cmdText, tableName);
+                        cmdText = "UPDATE [{0}].{1} SET LastAccess=@LastAccess WHERE [Key] = @Key";
+                        cmdUpd.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                         cmdUpd.Parameters.AddWithValue("@Key", key);
                         cmdUpd.Parameters.AddWithValue("@LastAccess", DateTime.Now);
@@ -323,8 +328,8 @@ namespace Ovicus.Caching
                 SqlCommand cmdSel = new SqlCommand();
                 cmdSel.Connection = con;
 
-                const string cmdText = "SELECT COUNT([Key]) FROM {0} WHERE (AbsoluteExpirationTime > GETDATE()) OR (AbsoluteExpirationTime = NULL AND SlidingExpirationTimeInMinutes <> NULL)";
-                cmdSel.CommandText = string.Format(cmdText, tableName);
+                const string cmdText = "SELECT COUNT([Key]) FROM [{0}].{1} WHERE (AbsoluteExpirationTime > GETDATE()) OR (AbsoluteExpirationTime = NULL AND SlidingExpirationTimeInMinutes <> NULL)";
+                cmdSel.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 con.Open();
 
@@ -343,8 +348,8 @@ namespace Ovicus.Caching
                 SqlCommand cmdSel = new SqlCommand();
                 cmdSel.Connection = con;
 
-                const string cmdText = "SELECT [Key], [Value] FROM {0} WHERE (AbsoluteExpirationTime > GETDATE()) OR (AbsoluteExpirationTime = NULL AND SlidingExpirationTimeInMinutes <> NULL)";
-                cmdSel.CommandText = string.Format(cmdText, tableName);
+                const string cmdText = "SELECT [Key], [Value] FROM [{0}].{1} WHERE (AbsoluteExpirationTime > GETDATE()) OR (AbsoluteExpirationTime = NULL AND SlidingExpirationTimeInMinutes <> NULL)";
+                cmdSel.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 con.Open();
 
@@ -387,8 +392,8 @@ namespace Ovicus.Caching
                 SqlCommand cmdDel = new SqlCommand();
                 cmdDel.Connection = con;
 
-                const string cmdText = "DELETE FROM {0} WHERE [Key] = @Key";
-                cmdDel.CommandText = string.Format(cmdText, tableName);
+                const string cmdText = "DELETE FROM [{0}].{1} WHERE [Key] = @Key";
+                cmdDel.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 cmdDel.Parameters.AddWithValue("@Key", key);
                 con.Open();
@@ -443,8 +448,8 @@ namespace Ovicus.Caching
 
                 // TODO: Remove items with sliding expiration time
                 
-                const string cmdText = "DELETE FROM {0} WHERE (AbsoluteExpirationTime <= GETDATE())";
-                cmdDel.CommandText = string.Format(cmdText, tableName);
+                const string cmdText = "DELETE FROM [{0}].{1} WHERE (AbsoluteExpirationTime <= GETDATE())";
+                cmdDel.CommandText = string.Format(cmdText, this.schemaName, this.tableName);
 
                 con.Open();
                 cmdDel.ExecuteNonQuery();
